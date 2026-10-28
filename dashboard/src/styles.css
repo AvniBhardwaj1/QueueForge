@@ -914,8 +914,29 @@ td {
     display: none;
   }
 
+  table {
+    table-layout: fixed;
+  }
+
+  th:first-child,
+  td:first-child {
+    width: 44%;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 31%;
+  }
+
+  th:last-child,
+  td:last-child {
+    width: 25%;
+  }
+
   .actions-cell {
-    min-width: 68px;
+    min-width: 0;
+    padding-right: 7px;
+    padding-left: 4px;
   }
 
   .table-footer {
