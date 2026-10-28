@@ -1,4 +1,4 @@
-.PHONY: run test race vet build load-test
+.PHONY: run test race vet build dashboard load-test
 
 run:
 	go run ./cmd/queueforge
@@ -14,6 +14,9 @@ vet:
 
 build:
 	go build -o bin/queueforge ./cmd/queueforge
+
+dashboard:
+	cd dashboard && npm run dev
 
 load-test:
 	sh scripts/load-test.sh

@@ -16,7 +16,7 @@ QueueForge is like a restaurant that accepts orders and sends them to several co
 - Saves jobs in SQLite so they survive crashes and restarts.
 - Stops gracefully and gives active work time to finish.
 - Limits requests per client.
-- Includes a small metrics endpoint. A web dashboard is not included.
+- Includes a small metrics endpoint and a React dashboard for monitoring and managing jobs.
 
 ## Why I built it
 
@@ -48,6 +48,7 @@ More detailed diagrams are in [docs/architecture.md](docs/architecture.md).
 | `net/http` | REST API using Go's standard library |
 | `modernc.org/sqlite` | SQLite database without CGO |
 | SQLite WAL mode | Durable local storage with concurrent readers |
+| React, Vite, TypeScript | Optional browser dashboard |
 | `testing` | Unit, API, persistence, and concurrency tests |
 | `hey` (optional) | HTTP load testing |
 
@@ -107,6 +108,18 @@ The server listens on port `8080`, starts four workers, and creates `queueforge.
 
 The job list may show `queued` or `running` if it is checked before a worker finishes. Set `PORT`, `WORKERS`, `POLL_INTERVAL`, and `DB_PATH` as environment variables to change the defaults. Flags such as `-port` and `-workers` are also available.
 
+### Run the dashboard
+
+Start the Go API as above, then open a second terminal:
+
+```sh
+cd QueueForge/dashboard
+npm ci
+npm run dev
+```
+
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). The Vite development server forwards `/jobs` and `/stats` requests to the Go API on port `8080`.
+
 ## API reference
 
 Errors use a consistent JSON shape: `{"error":{"code":"...","message":"..."}}`.
@@ -133,7 +146,7 @@ Built-in job types are `echo`, `sleep` (payload example: `{"seconds":1}`), and `
 
 ## Limitations and how I would scale it
 
-This version is designed for one machine: the API, dispatcher, and workers run in one process, and SQLite is a local database. The dispatcher polls the database, so work can wait up to the poll interval before it is noticed. The optional dashboard is not included.
+This version is designed for one machine: the API, dispatcher, and workers run in one process, and SQLite is a local database. The dispatcher polls the database, so work can wait up to the poll interval before it is noticed. The dashboard is a development UI; it is not bundled or served by the Go API.
 
 For several machines, I would replace SQLite with PostgreSQL and claim jobs using `SELECT ... FOR UPDATE SKIP LOCKED`, run workers as multiple processes, and use push notifications instead of polling. A shared rate-limit store would also be needed across API instances.
 
@@ -153,6 +166,14 @@ The optional load test requires `hey` and `curl`:
 make load-test
 ```
 
+Build the optional dashboard for production with:
+
+```sh
+cd dashboard
+npm ci
+npm run build
+```
+
 In one run, 1,000 `POST /jobs` requests at concurrency 20 all returned HTTP 201, and four workers completed all 1,000 jobs. `hey` measured **7,080.83 HTTP requests/second**; the load script measured **1,847.75 completed jobs/second over 0.541 seconds**. Machine: **Apple M2, macOS 27.0.1, Go 1.27.3, `hey` 0.1.5**. This is one local run, not a statistically controlled benchmark; results vary by machine and load.
 
 ## Project structure
@@ -168,6 +189,7 @@ QueueForge/
 │   ├── store/sqlite/            # SQLite implementation and store tests
 │   └── worker/                  # Dispatcher, worker pool, and handlers
 ├── docs/                        # Architecture and codebase guide
+├── dashboard/                   # Optional React + Vite + TypeScript UI
 ├── scripts/                     # Load-test script
 ├── Makefile
 ├── go.mod

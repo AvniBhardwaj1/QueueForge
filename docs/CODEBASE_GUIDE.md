@@ -26,6 +26,14 @@
 | `internal/worker/handlers.go` | Defines the handler function shape and the built-in demo job types. | `HandlerFunc`, `DemoHandlers` (`echo`, `sleep`, `flaky`) | `main` creates the registry and passes it to the API and worker pool. |
 | `internal/worker/pool.go` | Runs the polling dispatcher, worker goroutines, timeout execution, heartbeats, and result/failure handling. | `Pool`, `NewPool`, `Start`, `dispatch`, `runWorker`, `process`, `heartbeat`, `fail`, `StopClaims`, `Wait`, `CancelWork` | `main` starts and drains the pool; the pool calls the store and handlers. |
 | `internal/worker/pool_test.go` | Tests successful handler results and safely handled handler panics. | `TestProcessSuccessAndHandlerPanicRetry` | `go test` runs it. |
+| `dashboard/src/main.tsx` | Mounts the React dashboard in the HTML document. | `ReactDOM.createRoot` | Loaded by `dashboard/index.html`. |
+| `dashboard/src/App.tsx` | Polls stats and recent jobs, submits jobs, filters the list, and exposes retry/cancel actions. | `App`, `request`, `StatCard`, `StatusBadge`, `PriorityLabel` | `main.tsx` renders `App`; browser actions call the Go REST API through Vite's proxy. |
+| `dashboard/src/styles.css` | Provides the dashboard layout, status styling, focus states, and responsive breakpoints. | Global design tokens and component styles | Imported by `main.tsx`. |
+| `dashboard/vite.config.ts` | Configures Vite, React, and the development API proxy. | `defineConfig` | Used by Vite's `dev` and `build` commands. |
+| `dashboard/index.html` | Supplies the page metadata and React mount element. | `#root` | Vite serves it and loads `src/main.tsx`. |
+| `dashboard/package.json` | Lists dashboard dependencies and npm commands. | `dev`, `build`, `preview` scripts | npm and Vite use it. |
+| `dashboard/package-lock.json` | Locks exact dashboard dependency versions. | npm lock data | `npm ci` uses it for repeatable installs. |
+| `dashboard/tsconfig*.json` | Enables strict TypeScript checking for app and Vite config. | Compiler options and project references | `npm run build` runs `tsc -b`. |
 
 ## Request and job lifecycle
 
@@ -64,6 +72,15 @@ Related files: `internal/worker/pool.go`, `internal/worker/handlers.go`, and `in
 The `failed` status is supported by the schema and manual retry logic, but the current worker code goes directly from a failure to `queued` or `dead`.
 
 Related files: `internal/worker/pool.go`, `internal/backoff/backoff.go`, and `internal/store/sqlite/store.go`.
+
+### F. Using the dashboard
+
+1. Start QueueForge with `go run ./cmd/queueforge`.
+2. In `dashboard/`, run `npm ci` then `npm run dev`.
+3. Vite serves the React UI at `http://127.0.0.1:5173` and proxies `/jobs` and `/stats` calls to the API on port 8080.
+4. `dashboard/src/App.tsx` polls stats and the selected job list every two seconds, submits jobs, and calls the retry/cancel endpoints.
+
+Related files: `dashboard/src/App.tsx`, `dashboard/vite.config.ts`, and `dashboard/src/styles.css`.
 
 ### D. The process crashes mid-job and restarts
 
